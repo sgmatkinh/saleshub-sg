@@ -72,25 +72,31 @@ export default function POS() {
     const details = orderData.items.map(i => `- ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString()}đ`).join('\n');
 
     const templateParams = {
-      customer_name: orderData.customerName,
-      customer_phone: orderData.customerPhone,
+      // 3 cái này để lấp đầy phần đầu Template trong hình của mày
+      name: orderData.customerName || "Khách lẻ",
+      time: new Date().toLocaleString('vi-VN'),
+      message: "Có đơn hàng mới từ hệ thống POS",
+
+      // Đống này khớp với phần thân Template mày soạn
+      customer_name: orderData.customerName || "Khách lẻ",
+      customer_phone: orderData.customerPhone || "N/A",
       final_total: `${orderData.finalTotal.toLocaleString()}đ`,
       order_details: details,
       note: orderData.note || "Không có"
     };
 
-    // Mày dán mã của mày vào 3 dòng dưới này:
+    // Tao dán mã thật từ hình của mày vào đây luôn cho chắc
     const serviceId = "service_eegdor5";
     const templateId = "template_fg5v24i";
-    const publicKey = "6LYTzg-KAHISrLlTl";
+    const publicKey = "6LYTzg-KAHISrL1T1";
 
-    if (serviceId && templateId && publicKey) {
-        emailjs.send(serviceId, templateId, templateParams, publicKey)
-          .then(() => console.log('Email đã gửi thành công mày ơi!'))
-          .catch((err) => console.error('Lỗi gửi mail rồi:', err));
-    } else {
-        console.error("Thiếu mã EmailJS trong code rồi mày.");
-    }
+    emailjs.send(serviceId, templateId, templateParams, publicKey)
+      .then(() => {
+        console.log('NGON RỒI! ĐÃ NỔ MAIL.');
+      })
+      .catch((err) => {
+        console.error('Vẫn lỗi:', err);
+      });
   };
 
   const addToCart = (p) => {
