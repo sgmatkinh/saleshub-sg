@@ -72,12 +72,10 @@ export default function POS() {
     const details = orderData.items.map(i => `- ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString()}đ`).join('\n');
 
     const templateParams = {
-      // 3 cái này để lấp đầy phần đầu Template trong hình của mày
+      // Các biến này phải khớp 100% với Template mày soạn trên web
       name: orderData.customerName || "Khách lẻ",
       time: new Date().toLocaleString('vi-VN'),
       message: "Có đơn hàng mới từ hệ thống POS",
-
-      // Đống này khớp với phần thân Template mày soạn
       customer_name: orderData.customerName || "Khách lẻ",
       customer_phone: orderData.customerPhone || "N/A",
       final_total: `${orderData.finalTotal.toLocaleString()}đ`,
@@ -85,14 +83,14 @@ export default function POS() {
       note: orderData.note || "Không có"
     };
 
-    // Tao dán mã thật từ hình của mày vào đây luôn cho chắc
+    // ĐÃ SỬA LẠI PUBLIC KEY THEO HÌNH MÀY CHỤP
     const serviceId = "service_eegdor5";
     const templateId = "template_fg5v24i";
-    const publicKey = "6LYTzg-KAHISrL1T1";
+    const publicKey = "6LYTzg-KAHISrLITI"; // Chữ I hoa ở cuối nè mày!
 
     emailjs.send(serviceId, templateId, templateParams, publicKey)
-      .then(() => {
-        console.log('NGON RỒI! ĐÃ NỔ MAIL.');
+      .then((res) => {
+        console.log('NGON RỒI MÀY ƠI! MAIL ĐÃ GỬI.', res.status, res.text);
       })
       .catch((err) => {
         console.error('Vẫn lỗi:', err);
