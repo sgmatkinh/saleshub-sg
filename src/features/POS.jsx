@@ -91,7 +91,7 @@ export default function POS() {
     // 3. Thông tin tài khoản của mày (Đã thông)
     const serviceId = "service_eegdor5";
     const templateId = "template_tp7jriz";
-    const publicKey = "6LYTzg-KAHISrLITI";
+    const publicKey = "6LYTzg-KAHISrLlTl";
 
     emailjs.send(serviceId, templateId, templateParams, publicKey)
       .then((res) => console.log('Mail chuyên nghiệp đã gửi!', res.status))
