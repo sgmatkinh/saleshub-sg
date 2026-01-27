@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useReactToPrint } from 'react-to-print'; 
+import emailjs from '@emailjs/browser'; // CHÈN THÊM: Thư viện gửi mail
 import InvoiceTemplate from '../components/InvoiceTemplate'; 
 import {  
   ShoppingCart, CheckCircle, Trash2, Search, Loader2,  
@@ -20,7 +21,6 @@ export default function POS() {
   const [shopInfo, setShopInfo] = useState({});
   const [config, setConfig] = useState({});
 
-  // State hỗ trợ in ấn (Tránh in ra trang trống)
   const [printData, setPrintData] = useState(null);
 
   const [showProductTips, setShowProductTips] = useState(false);
@@ -37,12 +37,10 @@ export default function POS() {
 
   const printRef = useRef();
   
-  // Logic in ấn: Chỉ chạy khi printData đã được nạp đủ dữ liệu
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: 'Hoa_Don_Ban_Hang',
     onAfterPrint: () => {
-        // Sau khi in xong (hoặc hủy in) thì mới dọn dẹp giỏ hàng
         setCart([]); 
         setCustomer({ name: '', phone: '', email: '', note: '' });
         setDiscountTotal({ value: 0, type: 'VND' }); 
@@ -66,6 +64,29 @@ export default function POS() {
     setAlertMsg({ show: true, title, msg, type });
     if (type !== 'error') {
         setTimeout(() => setAlertMsg({ ...alertMsg, show: false }), 3000);
+    }
+  };
+
+  // --- CHÈN THÊM: HÀM GỬI EMAIL THÔNG BÁO ---
+  const sendEmailNotification = (orderData) => {
+    const details = orderData.items.map(i => `- ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString()}đ`).join('\n');
+
+    const templateParams = {
+      customer_name: orderData.customerName,
+      customer_phone: orderData.customerPhone,
+      final_total: `${orderData.finalTotal.toLocaleString()}đ`,
+      order_details: details,
+      note: orderData.note || "Không có"
+    };
+
+    const serviceId = process.env.REACT_APP_EMAILJS_SERVICE_ID;
+    const templateId = process.env.REACT_APP_EMAILJS_TEMPLATE_ID;
+    const publicKey = process.env.REACT_APP_EMAILJS_PUBLIC_KEY;
+
+    if (serviceId && templateId && publicKey) {
+        emailjs.send(serviceId, templateId, templateParams, publicKey)
+          .then(() => console.log('Mail sent!'))
+          .catch((err) => console.error('Mail error:', err));
     }
   };
 
@@ -115,7 +136,6 @@ export default function POS() {
   const handleCheckout = async (shouldPrint = false) => {
     if (cart.length === 0) return showAlert("Thông báo", "Giỏ hàng đang trống mày ơi!", "info");
     
-    // Tạo bản sao dữ liệu tại thời điểm bấm nút để in
     const currentInvoiceData = {
         customerName: customer.name || "Khách lẻ",
         customerPhone: customer.phone || "N/A",
@@ -163,11 +183,13 @@ export default function POS() {
       if (orderError) throw orderError;
       await Promise.all(cart.map(item => supabase.rpc('decrement_stock', { row_id: item.id, amount: item.qty })));
       
+      // CHÈN THÊM: Gọi hàm gửi mail sau khi lưu DB thành công
+      sendEmailNotification(currentInvoiceData);
+
       if (shouldPrint) {
-        setPrintData(currentInvoiceData); // Nạp dữ liệu vào template
-        setTimeout(() => handlePrint(), 300); // Đợi React render dữ liệu vào DOM ẩn rồi mới in
+        setPrintData(currentInvoiceData);
+        setTimeout(() => handlePrint(), 300);
       } else {
-        // Nếu không in thì dọn dẹp ngay
         setCart([]); 
         setCustomer({ name: '', phone: '', email: '', note: '' });
         setDiscountTotal({ value: 0, type: 'VND' }); 
@@ -385,7 +407,6 @@ export default function POS() {
         </div>
       </div>
 
-      {/* Cấu trúc ẩn để in: Sử dụng printData thay vì dữ liệu trực tiếp từ state giỏ hàng */}
       <div style={{ display: 'none' }}>
         {printData && (
             <InvoiceTemplate 
