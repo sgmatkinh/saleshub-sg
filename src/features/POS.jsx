@@ -57,7 +57,7 @@ export default function POS() {
     ]);
     if (prodRes.data) setProducts(prodRes.data);
     if (custRes.data) setCustomers(custRes.data);
-    setLoading(false);
+    loading && setLoading(false);
   };
 
   const showAlert = (title, msg, type = 'info') => {
@@ -67,7 +67,7 @@ export default function POS() {
     }
   };
 
-  // --- CHÈN THÊM: HÀM GỬI EMAIL THÔNG BÁO ---
+  // --- HÀM GỬI EMAIL ĐÃ SỬA: DÁN MÃ TRỰC TIẾP ---
   const sendEmailNotification = (orderData) => {
     const details = orderData.items.map(i => `- ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString()}đ`).join('\n');
 
@@ -79,14 +79,17 @@ export default function POS() {
       note: orderData.note || "Không có"
     };
 
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+    // Mày dán mã của mày vào 3 dòng dưới này:
+    const serviceId = "service_eegdor5";
+    const templateId = "template_fg5v24i";
+    const publicKey = "6LYTzg-KAHISrLlTl";
 
     if (serviceId && templateId && publicKey) {
         emailjs.send(serviceId, templateId, templateParams, publicKey)
-          .then(() => console.log('Mail sent!'))
-          .catch((err) => console.error('Mail error:', err));
+          .then(() => console.log('Email đã gửi thành công mày ơi!'))
+          .catch((err) => console.error('Lỗi gửi mail rồi:', err));
+    } else {
+        console.error("Thiếu mã EmailJS trong code rồi mày.");
     }
   };
 
@@ -183,7 +186,7 @@ export default function POS() {
       if (orderError) throw orderError;
       await Promise.all(cart.map(item => supabase.rpc('decrement_stock', { row_id: item.id, amount: item.qty })));
       
-      // CHÈN THÊM: Gọi hàm gửi mail sau khi lưu DB thành công
+      // GỬI MAIL THÔNG BÁO
       sendEmailNotification(currentInvoiceData);
 
       if (shouldPrint) {
