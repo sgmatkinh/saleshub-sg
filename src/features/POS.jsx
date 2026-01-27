@@ -90,7 +90,7 @@ export default function POS() {
 
     // 3. Thông tin tài khoản của mày (Đã thông)
     const serviceId = "service_eegdor5";
-    const templateId = "template_fg5v24i";
+    const templateId = "template_tp7jriz";
     const publicKey = "6LYTzg-KAHISrLITI";
 
     emailjs.send(serviceId, templateId, templateParams, publicKey)
