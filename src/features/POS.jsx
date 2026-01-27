@@ -9,7 +9,7 @@ import {
 
 export default function POS() {
   const [products, setProducts] = useState([]);
-  const [customers, setCustomers] = useState([]); // Danh sách khách cũ để gợi ý
+  const [customers, setCustomers] = useState([]); 
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -20,11 +20,11 @@ export default function POS() {
   const [shopInfo, setShopInfo] = useState({});
   const [config, setConfig] = useState({});
 
-  // States cho gợi ý (Suggestions)
+  // State hỗ trợ in ấn (Tránh in ra trang trống)
+  const [printData, setPrintData] = useState(null);
+
   const [showProductTips, setShowProductTips] = useState(false);
   const [showCustTips, setShowCustTips] = useState({ field: null, list: [] });
-
-  // State cho Popup thông báo tự chế
   const [alertMsg, setAlertMsg] = useState({ show: false, type: 'info', title: '', msg: '' });
 
   useEffect(() => { 
@@ -36,9 +36,20 @@ export default function POS() {
   }, []);
 
   const printRef = useRef();
+  
+  // Logic in ấn: Chỉ chạy khi printData đã được nạp đủ dữ liệu
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: 'Hoa_Don_Ban_Hang',
+    onAfterPrint: () => {
+        // Sau khi in xong (hoặc hủy in) thì mới dọn dẹp giỏ hàng
+        setCart([]); 
+        setCustomer({ name: '', phone: '', email: '', note: '' });
+        setDiscountTotal({ value: 0, type: 'VND' }); 
+        setCustomerCash(0);
+        setPrintData(null);
+        fetchInitialData();
+    }
   });
 
   const fetchInitialData = async () => {
@@ -103,6 +114,21 @@ export default function POS() {
 
   const handleCheckout = async (shouldPrint = false) => {
     if (cart.length === 0) return showAlert("Thông báo", "Giỏ hàng đang trống mày ơi!", "info");
+    
+    // Tạo bản sao dữ liệu tại thời điểm bấm nút để in
+    const currentInvoiceData = {
+        customerName: customer.name || "Khách lẻ",
+        customerPhone: customer.phone || "N/A",
+        customerEmail: customer.email || "",
+        items: [...cart],
+        subTotal: subTotal,
+        orderDiscount: totalDiscountAmount,
+        finalTotal: finalTotal,
+        customerPaid: customerCash,
+        changeDue: changeDue,
+        note: customer.note
+    };
+
     try {
       setLoading(true);
       let customerId = null;
@@ -138,14 +164,17 @@ export default function POS() {
       await Promise.all(cart.map(item => supabase.rpc('decrement_stock', { row_id: item.id, amount: item.qty })));
       
       if (shouldPrint) {
-        setTimeout(() => handlePrint(), 500);
+        setPrintData(currentInvoiceData); // Nạp dữ liệu vào template
+        setTimeout(() => handlePrint(), 300); // Đợi React render dữ liệu vào DOM ẩn rồi mới in
+      } else {
+        // Nếu không in thì dọn dẹp ngay
+        setCart([]); 
+        setCustomer({ name: '', phone: '', email: '', note: '' });
+        setDiscountTotal({ value: 0, type: 'VND' }); 
+        setCustomerCash(0);
+        fetchInitialData();
       }
       
-      setCart([]); 
-      setCustomer({ name: '', phone: '', email: '', note: '' });
-      setDiscountTotal({ value: 0, type: 'VND' }); 
-      setCustomerCash(0);
-      fetchInitialData();
       showAlert("Thành công", "Đã lưu đơn hàng lên hệ thống!", "success");
     } catch (error) {
       showAlert("Lỗi hệ thống", error.message, "error");
@@ -154,7 +183,6 @@ export default function POS() {
     }
   };
 
-  // Logic xử lý đề xuất (Autocomplete)
   const handleCustInput = (field, val) => {
     setCustomer({...customer, [field]: val});
     if (val.length > 0) {
@@ -178,10 +206,9 @@ export default function POS() {
   return (
     <div className="flex h-[calc(100vh-80px)] overflow-hidden bg-[#F8FAFC] p-4 gap-4 font-sans text-slate-700 relative">
       
-      {/* MODAL THÔNG BÁO TỰ CHẾ */}
       {alertMsg.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
                 <div className={`p-4 flex items-center gap-3 ${alertMsg.type === 'error' ? 'bg-red-50 text-red-600' : alertMsg.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
                     {alertMsg.type === 'error' ? <XCircle size={24}/> : alertMsg.type === 'success' ? <CheckCircle size={24}/> : <Info size={24}/>}
                     <h4 className="font-black uppercase text-sm tracking-tighter">{alertMsg.title}</h4>
@@ -205,7 +232,6 @@ export default function POS() {
               onChange={e => { setSearch(e.target.value); setShowProductTips(true); }}
               onBlur={() => setTimeout(() => setShowProductTips(false), 200)}
             />
-            {/* GỢI Ý SẢN PHẨM */}
             {showProductTips && filteredProducts.length > 0 && (
                 <div className="absolute top-full left-0 w-full bg-white shadow-2xl border border-slate-100 rounded-xl mt-2 z-50 overflow-hidden">
                     {filteredProducts.slice(0, 6).map(p => (
@@ -359,24 +385,16 @@ export default function POS() {
         </div>
       </div>
 
+      {/* Cấu trúc ẩn để in: Sử dụng printData thay vì dữ liệu trực tiếp từ state giỏ hàng */}
       <div style={{ display: 'none' }}>
-        <InvoiceTemplate 
-          ref={printRef} 
-          shopInfo={shopInfo}
-          config={config}
-          data={{ 
-            customerName: customer.name || "Khách lẻ",
-            customerPhone: customer.phone || "N/A",
-            customerEmail: customer.email || "",
-            items: cart,
-            subTotal: subTotal,
-            orderDiscount: totalDiscountAmount,
-            finalTotal: finalTotal,
-            customerPaid: customerCash,
-            changeDue: changeDue,
-            note: customer.note
-          }} 
-        />
+        {printData && (
+            <InvoiceTemplate 
+              ref={printRef} 
+              shopInfo={shopInfo}
+              config={config}
+              data={printData} 
+            />
+        )}
       </div>
     </div>
   );
