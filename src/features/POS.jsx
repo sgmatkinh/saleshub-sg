@@ -86,7 +86,7 @@ export default function POS() {
     // ĐÃ SỬA LẠI PUBLIC KEY THEO HÌNH MÀY CHỤP
     const serviceId = "service_eegdor5";
     const templateId = "template_fg5v24i";
-    const publicKey = "6LYTzg-KAHISrLITI"; // Chữ I hoa ở cuối nè mày!
+    const publicKey = "6LYTzg-KAHISrLlTl"; // Chữ I hoa ở cuối nè mày!
 
     emailjs.send(serviceId, templateId, templateParams, publicKey)
       .then((res) => {
