@@ -69,32 +69,33 @@ export default function POS() {
 
   // --- HÀM GỬI EMAIL ĐÃ SỬA: DÁN MÃ TRỰC TIẾP ---
   const sendEmailNotification = (orderData) => {
-    const details = orderData.items.map(i => `- ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString()}đ`).join('\n');
+    // 1. Tạo danh sách sản phẩm dạng bảng HTML
+    const detailsHtml = orderData.items.map(i => `
+      <tr>
+        <td style="border: 1px solid #ddd; padding: 8px; font-size: 14px;">${i.name.toUpperCase()}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 14px;">${i.qty}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-size: 14px;">${(i.price * i.qty).toLocaleString()}đ</td>
+      </tr>
+    `).join('');
 
+    // 2. Chuẩn bị các biến gửi đi (Khớp với Template trên web)
     const templateParams = {
-      // Các biến này phải khớp 100% với Template mày soạn trên web
-      name: orderData.customerName || "Khách lẻ",
-      time: new Date().toLocaleString('vi-VN'),
-      message: "Có đơn hàng mới từ hệ thống POS",
       customer_name: orderData.customerName || "Khách lẻ",
       customer_phone: orderData.customerPhone || "N/A",
-      final_total: `${orderData.finalTotal.toLocaleString()}đ`,
-      order_details: details,
-      note: orderData.note || "Không có"
+      time: new Date().toLocaleString('vi-VN'),
+      note: orderData.note || "Không có",
+      order_details_html: detailsHtml, // Dùng biến này thay cho text thuần
+      final_total: `${orderData.finalTotal.toLocaleString()}đ`
     };
 
-    // ĐÃ SỬA LẠI PUBLIC KEY THEO HÌNH MÀY CHỤP
+    // 3. Thông tin tài khoản của mày (Đã thông)
     const serviceId = "service_eegdor5";
-    const templateId = "template_tp7jriz";
-    const publicKey = "6LYTzg-KAHISrLlTl"; // Chữ I hoa ở cuối nè mày!
+    const templateId = "template_fg5v24i";
+    const publicKey = "6LYTzg-KAHISrLITI";
 
     emailjs.send(serviceId, templateId, templateParams, publicKey)
-      .then((res) => {
-        console.log('NGON RỒI MÀY ƠI! MAIL ĐÃ GỬI.', res.status, res.text);
-      })
-      .catch((err) => {
-        console.error('Vẫn lỗi:', err);
-      });
+      .then((res) => console.log('Mail chuyên nghiệp đã gửi!', res.status))
+      .catch((err) => console.error('Lỗi mail:', err));
   };
 
   const addToCart = (p) => {
