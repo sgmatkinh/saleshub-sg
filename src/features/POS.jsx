@@ -27,8 +27,8 @@ export default function POS() {
   const [showCustTips, setShowCustTips] = useState({ field: null, list: [] });
   const [alertMsg, setAlertMsg] = useState({ show: false, type: 'info', title: '', msg: '' });
 
-  // THÊM MỚI: Quản lý Tab trên Mobile
-  const [activeMobileTab, setActiveMobileTab] = useState('products'); // 'products' hoặc 'cart'
+  // Quản lý Tab trên Mobile
+  const [activeMobileTab, setActiveMobileTab] = useState('products');
 
   useEffect(() => { 
     fetchInitialData();
@@ -60,13 +60,13 @@ export default function POS() {
     ]);
     if (prodRes.data) setProducts(prodRes.data);
     if (custRes.data) setCustomers(custRes.data);
-    loading && setLoading(false);
+    setLoading(false);
   };
 
   const showAlert = (title, msg, type = 'info') => {
     setAlertMsg({ show: true, title, msg, type });
     if (type !== 'error') {
-        setTimeout(() => setAlertMsg({ ...alertMsg, show: false }), 3000);
+        setTimeout(() => setAlertMsg(prev => ({ ...prev, show: false })), 3000);
     }
   };
 
@@ -88,13 +88,9 @@ export default function POS() {
       final_total: `${orderData.finalTotal.toLocaleString()}đ`
     };
 
-    const serviceId = "service_eegdor5";
-    const templateId = "template_tp7jriz";
-    const publicKey = "6LYTzg-KAHISrLlTl";
-
-    emailjs.send(serviceId, templateId, templateParams, publicKey)
-      .then((res) => console.log('Mail chuyên nghiệp đã gửi!', res.status))
-      .catch((err) => console.error('Lỗi mail:', err));
+    emailjs.send("service_eegdor5", "template_tp7jriz", templateParams, "6LYTzg-KAHISrLlTl")
+      .then((res) => console.log('Mail sent!', res.status))
+      .catch((err) => console.error('Mail error:', err));
   };
 
   const addToCart = (p) => {
@@ -229,27 +225,28 @@ export default function POS() {
   const filteredProducts = search.trim() === '' ? [] : products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
   const hotProducts = products.slice(0, 5);
 
-  if (loading) return <div className="flex h-full items-center justify-center bg-white"><Loader2 className="animate-spin text-blue-500" size={40} /></div>;
+  if (loading) return <div className="flex h-screen items-center justify-center bg-white"><Loader2 className="animate-spin text-blue-500" size={40} /></div>;
 
   return (
-    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-80px)] overflow-hidden bg-[#F8FAFC] p-2 lg:p-4 gap-4 font-sans text-slate-700 relative">
+    <div className="flex flex-col lg:flex-row h-screen lg:h-[calc(100vh-64px)] overflow-hidden bg-[#F8FAFC] font-sans text-slate-700 relative">
       
-      {/* NÚT CHUYỂN TAB MOBILE */}
-      <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex bg-white shadow-2xl rounded-full p-1 border border-slate-200">
+      {/* NÚT CHUYỂN TAB MOBILE - Đưa lên trên để tránh đè nút thanh toán */}
+      <div className="lg:hidden shrink-0 flex bg-white shadow-sm p-2 border-b border-slate-200 justify-center gap-2 z-20">
         <button 
           onClick={() => setActiveMobileTab('products')}
-          className={`px-6 py-2 rounded-full text-xs font-black uppercase flex items-center gap-2 transition-all ${activeMobileTab === 'products' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+          className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-all ${activeMobileTab === 'products' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'}`}
         >
-          <LayoutGrid size={16} /> Hàng hóa
+          <LayoutGrid size={14} /> Hàng hóa
         </button>
         <button 
           onClick={() => setActiveMobileTab('cart')}
-          className={`px-6 py-2 rounded-full text-xs font-black uppercase flex items-center gap-2 transition-all ${activeMobileTab === 'cart' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+          className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-all ${activeMobileTab === 'cart' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'}`}
         >
-          <ShoppingCart size={16} /> Giỏ ({cart.length})
+          <ShoppingCart size={14} /> Giỏ ({cart.length})
         </button>
       </div>
 
+      {/* ALERT MODAL */}
       {alertMsg.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
@@ -259,20 +256,20 @@ export default function POS() {
                 </div>
                 <div className="p-6">
                     <p className="text-slate-600 text-sm font-medium leading-relaxed">{alertMsg.msg}</p>
-                    <button onClick={() => setAlertMsg({ ...alertMsg, show: false })} className="w-full mt-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Đã rõ</button>
+                    <button onClick={() => setAlertMsg({ ...alertMsg, show: false })} className="w-full mt-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase">Đã rõ</button>
                 </div>
             </div>
         </div>
       )}
 
       {/* CỘT TRÁI: TÌM KIẾM & SẢN PHẨM */}
-      <div className={`flex-[1.5] flex flex-col gap-4 overflow-hidden ${activeMobileTab !== 'products' ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`flex-[1.5] flex flex-col p-3 lg:p-4 gap-4 overflow-hidden ${activeMobileTab !== 'products' ? 'hidden lg:flex' : 'flex'}`}>
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 relative shrink-0">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input  
               type="text" placeholder="Gõ tên sản phẩm..."  
-              className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-blue-500 transition-all text-sm font-medium"
+              className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-blue-500 text-sm font-medium"
               value={search}
               onChange={e => { setSearch(e.target.value); setShowProductTips(true); }}
               onBlur={() => setTimeout(() => setShowProductTips(false), 200)}
@@ -288,21 +285,20 @@ export default function POS() {
                 </div>
             )}
           </div>
-          
-          <div className="flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mr-1 shrink-0">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 shrink-0">
               <Sparkles size={12} className="text-amber-500" /> HOT:
             </span>
             {hotProducts.map(p => (
-              <button key={p.id} onClick={() => addToCart(p)} className="px-3 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white border border-blue-100 rounded-full text-[11px] font-semibold text-blue-600 transition-all active:scale-90 shrink-0">+ {p.name}</button>
+              <button key={p.id} onClick={() => addToCart(p)} className="px-3 py-1 bg-blue-50 border border-blue-100 rounded-full text-[11px] font-semibold text-blue-600 shrink-0">+ {p.name}</button>
             ))}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4 pr-1 no-scrollbar pb-20 lg:pb-0">
+        <div className="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4 no-scrollbar pb-10">
           {filteredProducts.length > 0 ? (
             filteredProducts.map(p => (
-              <div key={p.id} onClick={() => addToCart(p)} className="bg-white p-3 lg:p-4 rounded-2xl border border-slate-100 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col group active:scale-95 h-fit">
+              <div key={p.id} onClick={() => addToCart(p)} className="bg-white p-3 lg:p-4 rounded-2xl border border-slate-100 hover:border-blue-300 transition-all cursor-pointer flex flex-col active:scale-95 h-fit shadow-sm">
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-[8px] lg:text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded uppercase truncate max-w-[60px]">{p.category}</span>
                   <span className="text-[8px] lg:text-[10px] text-slate-400 font-medium">Tồn: {p.stock}</span>
@@ -324,118 +320,112 @@ export default function POS() {
       </div>
 
       {/* CỘT PHẢI: GIỎ HÀNG & THANH TOÁN */}
-      <div className={`flex-1 lg:min-w-[450px] flex flex-col gap-4 overflow-hidden ${activeMobileTab !== 'cart' ? 'hidden lg:flex' : 'flex'}`}>
-        <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-          <div className="p-4 lg:p-5 border-b border-slate-100 space-y-4 bg-slate-50/50 shrink-0">
+      <div className={`flex-1 lg:min-w-[450px] flex flex-col overflow-hidden bg-white lg:border-l border-slate-200 ${activeMobileTab !== 'cart' ? 'hidden lg:flex' : 'flex'}`}>
+        
+        {/* Header & Khách hàng */}
+        <div className="p-4 border-b border-slate-100 space-y-4 bg-slate-50/50 shrink-0">
+          <div className="flex justify-between items-center">
+              <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-xs tracking-widest">
+                <ShoppingCart size={18} className="text-blue-600" /> Giỏ hàng ({cart.length})
+              </h3>
+              <button onClick={() => setCart([])} className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase">Xóa giỏ</button>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 relative">
+              <div className="relative">
+                <User size={14} className="absolute left-3 top-3 text-slate-400"/>
+                <input value={customer.name} placeholder="Tên khách" className="w-full pl-9 p-2.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400" 
+                  onChange={e => handleCustInput('name', e.target.value)} 
+                  onBlur={() => setTimeout(() => setShowCustTips({field: null, list: []}), 200)} />
+                {showCustTips.field === 'name' && showCustTips.list.length > 0 && (
+                  <div className="absolute top-full left-0 w-full bg-white shadow-xl border border-slate-100 rounded-lg z-[60] mt-1">
+                      {showCustTips.list.map(c => <div key={c.id} onClick={() => selectCustTip(c)} className="p-2 text-xs font-bold hover:bg-blue-50 cursor-pointer border-b border-slate-50">{c.name} - {c.phone}</div>)}
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <Phone size={14} className="absolute left-3 top-3 text-slate-400"/>
+                <input value={customer.phone} placeholder="Số điện thoại" className="w-full pl-9 p-2.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400" 
+                  onChange={e => handleCustInput('phone', e.target.value)} 
+                  onBlur={() => setTimeout(() => setShowCustTips({field: null, list: []}), 200)}/>
+                {showCustTips.field === 'phone' && showCustTips.list.length > 0 && (
+                  <div className="absolute top-full left-0 w-full bg-white shadow-xl border border-slate-100 rounded-lg z-[60] mt-1">
+                      {showCustTips.list.map(c => <div key={c.id} onClick={() => selectCustTip(c)} className="p-2 text-xs font-bold hover:bg-blue-50 cursor-pointer border-b border-slate-50">{c.phone} - {c.name}</div>)}
+                  </div>
+                )}
+              </div>
+          </div>
+        </div>
+
+        {/* Danh sách items - Tự động giãn nở */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
+          {cart.length === 0 ? (
+             <div className="h-full flex flex-col items-center justify-center opacity-30 italic text-xs py-10">
+               <ShoppingCart size={40} className="mb-2" />
+               Giỏ hàng trống
+             </div>
+          ) : cart.map(i => (
+            <div key={i.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-[11px] font-bold text-slate-700 uppercase truncate flex-1 pr-2">{i.name}</p>
+                <button onClick={() => setCart(cart.filter(x => x.id !== i.id))} className="text-slate-300 hover:text-red-500"><Trash2 size={14}/></button>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center bg-white border border-slate-200 rounded-lg">
+                  <button onClick={() => updateQty(i.id, -1)} className="p-1.5 text-slate-400"><Minus size={12}/></button>
+                  <span className="w-8 text-center text-[11px] font-bold">{i.qty}</span>
+                  <button onClick={() => updateQty(i.id, 1)} className="p-1.5 text-slate-400"><Plus size={12}/></button>
+                </div>
+                <div className="flex items-center gap-1 flex-1 max-w-[120px] bg-white border border-slate-200 rounded px-1">
+                  <input type="number" placeholder="Giảm" value={i.itemDiscountValue || ''} className="w-full py-1 text-[10px] font-bold text-orange-600 outline-none bg-transparent" onChange={(e) => updateItemDiscount(i.id, e.target.value)} />
+                  <button onClick={() => updateItemDiscount(i.id, undefined, i.itemDiscountType === 'VND' ? '%' : 'VND')} className="text-[9px] font-bold text-slate-400">{i.itemDiscountType}</button>
+                </div>
+                <p className="text-xs font-black text-slate-900">{(i.qty * i.price - calculateItemDiscount(i)).toLocaleString()}đ</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Panel Thanh toán - Bám dính phía dưới, không bị che */}
+        <div className="bg-slate-900 text-white p-4 lg:p-6 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
+          <div className="space-y-3">
             <div className="flex justify-between items-center">
-                <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-xs tracking-widest">
-                  <ShoppingCart size={18} className="text-blue-600" /> Giỏ hàng ({cart.length})
-                </h3>
-                <button onClick={() => setCart([])} className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase">Xóa giỏ</button>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Giảm giá tổng</span>
+              <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+                  <input type="number" value={discountTotal.value || ''} className="bg-transparent px-3 py-1 text-right text-blue-400 font-bold outline-none w-20 text-sm" onChange={e => setDiscountTotal({...discountTotal, value: Number(e.target.value)})} />
+                  <button onClick={() => setDiscountTotal({...discountTotal, type: discountTotal.type === 'VND' ? '%' : 'VND'})} className="bg-slate-700 px-2 py-1 text-[10px] font-bold border-l border-slate-600">{discountTotal.type}</button>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 relative">
-                <div className="relative">
-                  <User size={14} className="absolute left-3 top-3 text-slate-400"/>
-                  <input value={customer.name} placeholder="Tên khách hàng" className="w-full pl-9 p-2.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400" 
-                    onChange={e => handleCustInput('name', e.target.value)} 
-                    onBlur={() => setTimeout(() => setShowCustTips({field: null, list: []}), 200)} />
-                  {showCustTips.field === 'name' && showCustTips.list.length > 0 && (
-                    <div className="absolute top-full left-0 w-full bg-white shadow-xl border border-slate-100 rounded-lg z-[60] mt-1">
-                        {showCustTips.list.map(c => <div key={c.id} onClick={() => selectCustTip(c)} className="p-2 text-xs font-bold hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0">{c.name} - {c.phone}</div>)}
-                    </div>
-                  )}
-                </div>
-                <div className="relative">
-                  <Phone size={14} className="absolute left-3 top-3 text-slate-400"/>
-                  <input value={customer.phone} placeholder="Số điện thoại" className="w-full pl-9 p-2.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400" 
-                    onChange={e => handleCustInput('phone', e.target.value)} 
-                    onBlur={() => setTimeout(() => setShowCustTips({field: null, list: []}), 200)}/>
-                  {showCustTips.field === 'phone' && showCustTips.list.length > 0 && (
-                    <div className="absolute top-full left-0 w-full bg-white shadow-xl border border-slate-100 rounded-lg z-[60] mt-1">
-                        {showCustTips.list.map(c => <div key={c.id} onClick={() => selectCustTip(c)} className="p-2 text-xs font-bold hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0">{c.phone} - {c.name}</div>)}
-                    </div>
-                  )}
-                </div>
-                <div className="relative sm:col-span-2">
-                  <Mail size={14} className="absolute left-3 top-3 text-slate-400"/>
-                  <input value={customer.email} placeholder="Email" className="w-full pl-9 p-2.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400" 
-                    onChange={e => handleCustInput('email', e.target.value)}
-                    onBlur={() => setTimeout(() => setShowCustTips({field: null, list: []}), 200)} />
-                </div>
-                <div className="relative sm:col-span-2">
-                  <FileText size={14} className="absolute left-3 top-3 text-slate-400"/>
-                  <textarea value={customer.note} placeholder="Ghi chú đơn hàng..." className="w-full pl-9 p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400 h-10 resize-none" onChange={e => setCustomer({...customer, note: e.target.value})} />
-                </div>
+            <div className="flex justify-between items-end py-2 border-t border-white/5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tổng cần thu</span>
+              <span className="text-2xl font-black text-white">{finalTotal.toLocaleString()}đ</span>
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 no-scrollbar pb-40 lg:pb-4">
-            {cart.length === 0 ? (
-               <div className="h-full flex flex-col items-center justify-center opacity-30 italic text-xs">
-                 <ShoppingCart size={40} className="mb-2" />
-                 Giỏ hàng trống
-               </div>
-            ) : cart.map(i => (
-              <div key={i.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-all">
-                <div className="flex justify-between items-start mb-2">
-                  <p className="text-[11px] font-bold text-slate-700 uppercase truncate flex-1 pr-2">{i.name}</p>
-                  <button onClick={() => setCart(cart.filter(x => x.id !== i.id))} className="text-slate-300 hover:text-red-500"><Trash2 size={14}/></button>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center bg-white border border-slate-200 rounded-lg">
-                    <button onClick={() => updateQty(i.id, -1)} className="p-1.5 text-slate-400 hover:text-blue-500"><Minus size={12}/></button>
-                    <span className="w-8 text-center text-[11px] font-bold">{i.qty}</span>
-                    <button onClick={() => updateQty(i.id, 1)} className="p-1.5 text-slate-400 hover:text-blue-500"><Plus size={12}/></button>
-                  </div>
-                  <div className="flex items-center gap-1 flex-1 min-w-[100px] max-w-[140px] bg-white border border-slate-200 rounded px-1">
-                    <Tag size={10} className="text-orange-400"/>
-                    <input type="number" placeholder="Giảm" value={i.itemDiscountValue || ''} className="w-full py-1 text-[10px] font-bold text-orange-600 outline-none" onChange={(e) => updateItemDiscount(i.id, e.target.value)} />
-                    <button onClick={() => updateItemDiscount(i.id, undefined, i.itemDiscountType === 'VND' ? '%' : 'VND')} className="text-[9px] font-bold bg-slate-100 px-1.5 py-0.5 rounded hover:bg-orange-100 text-slate-600">{i.itemDiscountType}</button>
-                  </div>
-                  <p className="text-xs lg:text-sm font-black text-slate-900">{(i.qty * i.price - calculateItemDiscount(i)).toLocaleString()}đ</p>
-                </div>
+            <div className="grid grid-cols-2 gap-3 py-2">
+              <div>
+                <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Khách đưa</p>
+                <input type="number" value={customerCash || ''} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-md font-black text-green-400 outline-none" placeholder="0" onChange={e => setCustomerCash(Number(e.target.value))} />
               </div>
-            ))}
-          </div>
+              <div className="text-right">
+                <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Tiền thối</p>
+                <div className="p-2 text-md font-black text-orange-400 bg-slate-800/50 rounded-lg border border-white/5 truncate">{changeDue.toLocaleString()}đ</div>
+              </div>
+            </div>
 
-          <div className="p-4 lg:p-5 bg-slate-900 text-white rounded-t-3xl shadow-2xl shrink-0">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Giảm giá tổng</span>
-                <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
-                    <input type="number" value={discountTotal.value || ''} className="bg-transparent px-3 py-1 text-right text-blue-400 font-bold outline-none w-20 text-sm" onChange={e => setDiscountTotal({...discountTotal, value: Number(e.target.value)})} />
-                    <button onClick={() => setDiscountTotal({...discountTotal, type: discountTotal.type === 'VND' ? '%' : 'VND'})} className="bg-slate-700 px-2 py-1 text-[10px] font-bold hover:bg-blue-600 transition-colors border-l border-slate-600">{discountTotal.type}</button>
-                </div>
-              </div>
-              <div className="flex justify-between items-end py-2 border-t border-white/5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tổng cần thu</span>
-                <span className="text-2xl lg:text-3xl font-black text-white">{finalTotal.toLocaleString()}đ</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 py-3 border-t border-white/5">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Tiền khách đưa</p>
-                  <input type="number" value={customerCash || ''} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 lg:p-3 text-lg lg:text-xl font-black text-green-400 outline-none" placeholder="0" onChange={e => setCustomerCash(Number(e.target.value))} />
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Tiền thối lại</p>
-                  <div className="p-2 lg:p-3 text-lg lg:text-xl font-black text-orange-400 bg-slate-800/50 rounded-xl border border-white/5 truncate">{changeDue.toLocaleString()}đ</div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button onClick={() => handleCheckout(false)} className="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-white/10">
-                    <CheckCircle size={18} /> Lưu Đơn
-                </button>
-                <button onClick={() => handleCheckout(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-black text-xs lg:text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
-                    <Printer size={20} /> In Hóa Đơn
-                </button>
-              </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => handleCheckout(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest border border-white/10 flex items-center justify-center gap-2 transition-all">
+                  <CheckCircle size={16} /> Lưu Đơn
+              </button>
+              <button onClick={() => handleCheckout(true)} className="flex-[1.5] bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">
+                  <Printer size={18} /> In Hóa Đơn
+              </button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* In ẩn */}
       <div style={{ display: 'none' }}>
         {printData && (
             <InvoiceTemplate 
