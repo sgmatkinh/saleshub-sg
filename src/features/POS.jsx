@@ -5,7 +5,7 @@ import emailjs from '@emailjs/browser';
 import InvoiceTemplate from '../components/InvoiceTemplate'; 
 import {  
   ShoppingCart, CheckCircle, Trash2, Search, Loader2,  
-  User, Phone, FileText, Plus, Minus, Mail, Tag, Sparkles, Printer, XCircle, Info, LayoutGrid
+  User, Phone, FileText, Plus, Minus, Mail, Tag, Sparkles, Printer, XCircle, Info, LayoutGrid, Flame
 } from 'lucide-react';
 
 export default function POS() {
@@ -27,8 +27,11 @@ export default function POS() {
   const [showCustTips, setShowCustTips] = useState({ field: null, list: [] });
   const [alertMsg, setAlertMsg] = useState({ show: false, type: 'info', title: '', msg: '' });
 
-  // THÊM MỚI: Quản lý Tab trên Mobile
-  const [activeMobileTab, setActiveMobileTab] = useState('products'); // 'products' hoặc 'cart'
+  // Quản lý Tab trên Mobile
+  const [activeMobileTab, setActiveMobileTab] = useState('products'); 
+
+  // MỚI: State cho Top 10 sản phẩm bán chạy
+  const [topProducts, setTopProducts] = useState([]);
 
   useEffect(() => { 
     fetchInitialData();
@@ -54,12 +57,31 @@ export default function POS() {
   });
 
   const fetchInitialData = async () => {
-    const [prodRes, custRes] = await Promise.all([
+    // 1. Lấy tất cả sản phẩm còn hàng
+    // 2. Lấy danh sách khách hàng
+    // 3. Lấy Top 10 sản phẩm bán chạy từ bảng orders (giả định logic items lưu trong JSONB)
+    const [prodRes, custRes, topRes] = await Promise.all([
       supabase.from('products').select('*').gt('stock', 0),
-      supabase.from('customers').select('*')
+      supabase.from('customers').select('*'),
+      supabase.from('orders').select('items').limit(50) // Lấy 50 đơn gần nhất để thống kê
     ]);
+
     if (prodRes.data) setProducts(prodRes.data);
     if (custRes.data) setCustomers(custRes.data);
+
+    // Logic thống kê Top 10 bán chạy từ data local/orders
+    if (topRes.data && prodRes.data) {
+        const counts = {};
+        topRes.data.forEach(order => {
+            order.items?.forEach(item => {
+                counts[item.id] = (counts[item.id] || 0) + item.qty;
+            });
+        });
+        const sortedIds = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 10);
+        const topList = sortedIds.map(id => prodRes.data.find(p => p.id === id)).filter(p => p !== undefined);
+        setTopProducts(topList.length > 0 ? topList : prodRes.data.slice(0, 10)); // Dự phòng nếu chưa có đơn hàng
+    }
+    
     loading && setLoading(false);
   };
 
@@ -226,8 +248,12 @@ export default function POS() {
     setShowCustTips({ field: null, list: [] });
   };
 
-  const filteredProducts = search.trim() === '' ? [] : products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-  const hotProducts = products.slice(0, 5);
+  // CẢI TIẾN: Tìm kiếm đa năng theo Tên, SKU, Barcode
+  const filteredProducts = search.trim() === '' ? [] : products.filter(p => 
+    p.name?.toLowerCase().includes(search.toLowerCase()) || 
+    p.sku?.toLowerCase().includes(search.toLowerCase()) || 
+    p.barcode?.toString().includes(search)
+  );
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-white"><Loader2 className="animate-spin text-blue-500" size={40} /></div>;
 
@@ -267,21 +293,24 @@ export default function POS() {
 
       {/* CỘT TRÁI: TÌM KIẾM & SẢN PHẨM */}
       <div className={`flex-[1.5] flex flex-col p-3 lg:p-4 gap-4 overflow-hidden ${activeMobileTab !== 'products' ? 'hidden lg:flex' : 'flex'}`}>
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 relative shrink-0">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-4 relative shrink-0">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input  
-              type="text" placeholder="Gõ tên sản phẩm..."  
+              type="text" placeholder="Tìm theo Tên, SKU hoặc Barcode..."  
               className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-blue-500 transition-all text-sm font-medium"
               value={search}
               onChange={e => { setSearch(e.target.value); setShowProductTips(true); }}
               onBlur={() => setTimeout(() => setShowProductTips(false), 200)}
             />
             {showProductTips && filteredProducts.length > 0 && (
-                <div className="absolute top-full left-0 w-full bg-white shadow-2xl border border-slate-100 rounded-xl mt-2 z-50 overflow-hidden">
-                    {filteredProducts.slice(0, 6).map(p => (
+                <div className="absolute top-full left-0 w-full bg-white shadow-2xl border border-slate-100 rounded-xl mt-2 z-50 overflow-hidden max-h-60 overflow-y-auto">
+                    {filteredProducts.map(p => (
                         <div key={p.id} onClick={() => addToCart(p)} className="p-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0">
-                            <span className="text-sm font-bold uppercase">{p.name}</span>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold uppercase">{p.name}</span>
+                                <span className="text-[10px] text-slate-400">SKU: {p.sku || 'N/A'} - BC: {p.barcode || 'N/A'}</span>
+                            </div>
                             <span className="text-xs font-black text-blue-600">{p.price.toLocaleString()}đ</span>
                         </div>
                     ))}
@@ -289,13 +318,19 @@ export default function POS() {
             )}
           </div>
           
-          <div className="flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mr-1 shrink-0">
-              <Sparkles size={12} className="text-amber-500" /> HOT:
-            </span>
-            {hotProducts.map(p => (
-              <button key={p.id} onClick={() => addToCart(p)} className="px-3 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white border border-blue-100 rounded-full text-[11px] font-semibold text-blue-600 transition-all active:scale-90 shrink-0">+ {p.name}</button>
-            ))}
+          {/* MỚI: TOP 10 SẢN PHẨM BÁN CHẠY */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+                <Flame size={16} className="text-orange-500 fill-orange-500" />
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Sản phẩm bán chạy</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
+                {topProducts.map(p => (
+                <button key={p.id} onClick={() => addToCart(p)} className="px-4 py-2 bg-orange-50 hover:bg-orange-500 hover:text-white border border-orange-100 rounded-xl text-[11px] font-bold text-orange-600 transition-all active:scale-90 shrink-0 flex items-center gap-1">
+                    <Plus size={12}/> {p.name}
+                </button>
+                ))}
+            </div>
           </div>
         </div>
 
@@ -317,7 +352,7 @@ export default function POS() {
           ) : (
             <div className="col-span-full flex flex-col items-center justify-center text-slate-300 py-20">
               <Search size={48} className="mb-2 opacity-20" />
-              <p className="text-sm font-medium italic text-center px-4">Nhập tên sản phẩm để bắt đầu bán hàng...</p>
+              <p className="text-sm font-medium italic text-center px-4">Nhập Tên, Barcode hoặc SKU để tìm nhanh sản phẩm...</p>
             </div>
           )}
         </div>
@@ -371,7 +406,7 @@ export default function POS() {
           </div>
         </div>
 
-        {/* DANH SÁCH ITEM TRONG GIỎ - Fix overflow để nhường chỗ cho footer */}
+        {/* DANH SÁCH ITEM TRONG GIỎ */}
         <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 no-scrollbar pb-4">
           {cart.length === 0 ? (
              <div className="h-full flex flex-col items-center justify-center opacity-30 italic text-xs py-10">
@@ -401,7 +436,7 @@ export default function POS() {
           ))}
         </div>
 
-        {/* FOOTER THANH TOÁN - Cố định và đảm bảo hiển thị hết nút */}
+        {/* FOOTER THANH TOÁN */}
         <div className="p-4 lg:p-5 bg-slate-900 text-white shrink-0 shadow-2xl z-10">
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -428,7 +463,6 @@ export default function POS() {
               </div>
             </div>
 
-            {/* CỤM NÚT BẤM - Giữ nguyên logic, fix khoảng cách */}
             <div className="flex flex-col gap-2">
               <button 
                 onClick={() => handleCheckout(false)} 
