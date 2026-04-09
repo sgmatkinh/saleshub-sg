@@ -14,27 +14,19 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isReady, setIsReady] = useState(false); // CHỐT CHẶN: Để phanh lại 3 giây
   const [timeLeft, setTimeLeft] = useState(30); 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Quản lý đóng mở menu trên mobile
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // THÊM MỚI: Quản lý đóng mở menu trên mobile
   const timerRef = useRef(null);
 
-  // 1. Quản lý trạng thái đăng nhập (ĐÃ TỐI ƯU GỌN GÀNG)
+  // 1. Quản lý trạng thái đăng nhập (GIỮ NGUYÊN GỐC)
   useEffect(() => {
-    // Lấy session ban đầu
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      if (s) {
-        // Nếu có sẵn session (F5 trang), phanh 3s luôn cho đồng bộ
-        setTimeout(() => setIsReady(true), 3000);
-      } else {
-        setIsReady(true);
-      }
+      if (s) setIsReady(true);
     });
 
-    // Lắng nghe biến động
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, s) => {
       if (_ev === 'SIGNED_IN') {
         setSession(s);
-        setIsReady(false); // Reset lại đợi 3s
         setTimeout(() => {
           setIsReady(true);
         }, 3000);
@@ -74,12 +66,12 @@ export default function App() {
     };
   }, [session, isReady]);
 
-  // NẾU CHƯA CÓ SESSION HOẶC CHƯA HẾT 3 GIÂY CHỜ THÌ VẪN Ở LẠI LOGIN
+  // NẾU CHƯA CÓ SESSION HOẶC CHƯA HẾT 3 GIÂY CHỜ THÌ VẪN Ở LẠI LOGIN (GIỮ NGUYÊN GỐC)
   if (!session || !isReady) return <Login />;
 
   return (
     <div className="flex h-screen overflow-hidden relative">
-      {/* HUD Hiển thị đếm ngược */}
+      {/* HUD Hiển thị đếm ngược (GIỮ NGUYÊN GỐC) */}
       <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[999] bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-bold">
         Phiên làm việc sắp hết: {timeLeft}s
       </div>
@@ -92,7 +84,7 @@ export default function App() {
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR: Đã thêm class để ẩn/hiện trên mobile */}
       <div className={`
         fixed inset-y-0 left-0 z-[50] w-72 bg-slate-900 text-white flex flex-col shadow-2xl transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0
@@ -103,6 +95,7 @@ export default function App() {
             <h1 className="text-2xl font-black text-blue-400 italic tracking-tighter">SalesHub SG</h1>
             <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-widest italic text-center">Version 2.0 Online</p>
           </div>
+          {/* Nút đóng menu chỉ hiện trên mobile */}
           <button className="lg:hidden p-2 text-slate-400" onClick={() => setIsSidebarOpen(false)}>
             <X size={24} />
           </button>
@@ -120,7 +113,7 @@ export default function App() {
               key={item.id}
               onClick={() => {
                 setTab(item.id);
-                setIsSidebarOpen(false); 
+                setIsSidebarOpen(false); // Tự đóng menu sau khi chọn trên mobile
               }} 
               className={`w-full flex items-center p-4 rounded-2xl font-bold transition-all ${tab===item.id?'bg-blue-600 text-white shadow-lg shadow-blue-900/50':'text-slate-400 hover:bg-slate-800'}`}
             >
@@ -147,6 +140,7 @@ export default function App() {
       <div className="flex-1 bg-slate-50 overflow-auto relative flex flex-col w-full">
         <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center px-4 sm:px-8 sticky top-0 z-10 justify-between shrink-0">
             <div className="flex items-center gap-4">
+              {/* NÚT MỞ MENU: Chỉ hiện trên mobile */}
               <button 
                 onClick={() => setIsSidebarOpen(true)}
                 className="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition-all"
