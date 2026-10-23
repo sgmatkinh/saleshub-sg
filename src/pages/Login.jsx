@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import logoImg from '../assets/images/logo-shop-net.png';
-import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, Activity, Terminal, AlertTriangle } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, Activity, Glasses, AlertTriangle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -89,7 +89,7 @@ export default function Login() {
         `}>
           <div className="text-center mb-10">
             <div className="flex items-center justify-center gap-2 mb-2">
-                <Terminal size={14} className={isSuccess ? 'text-green-500' : 'text-blue-500'} />
+                <Glasses size={14} className={isSuccess ? 'text-green-500' : 'text-blue-500'} />
                 <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em]">
                   {isSuccess ? 'ACCESS GRANTED' : 'Secure Terminal v2.0'}
                 </h2>
